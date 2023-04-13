@@ -1,0 +1,6 @@
+README.txt
+setup.py
+bioinspired_nav.egg-info/PKG-INFO
+bioinspired_nav.egg-info/SOURCES.txt
+bioinspired_nav.egg-info/dependency_links.txt
+bioinspired_nav.egg-info/top_level.txt
