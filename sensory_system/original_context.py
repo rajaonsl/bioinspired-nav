@@ -8,13 +8,13 @@ from enum import IntEnum  #@TODO: investigate fastenum
 
 from sensory_system.context_interface import ContextInterface
 
-# @TODO find better name
 # =========================================================================================================
 class ContextCueType(IntEnum):
-    OBSTACLE = 0 # is 0 ok ?
+    OBSTACLE = 0
     CORNER = 1
     LANDMARK = 2
 
+# @TODO find better name
 # ========================================================================================================= 
 class OriginalContext(ContextInterface):
     """
@@ -23,20 +23,22 @@ class OriginalContext(ContextInterface):
 
     # ---------------------------------------------------------------------------------------------------------
     #@TODO: reconsider input
-    def __init__(self, context_cues: np.ndarray):
+    def __init__(self, context_cues: np.ndarray, spread_size):
         """
         context cues are expected as a numpy array of context cues (type ContextCue)
         """
         # An array of all context cues. each cue is represented with [d, theta, type, d_2]
-        # where theta: angular coordinate
-        #       d radial coordinate
-        #       type of cue (integer)
-        #       d_2 radial coordinate scaled by 100*tanh(d/100)
+        # with theta angular coordinate,
+        #      d radial coordinate,
+        #      type of cue (integer),
+        #      d_2 radial coordinate scaled by 100*tanh(d/100)
         self.context_cues: np.ndarray = context_cues
 
+        # The higher the spread size is, the further a cue will "impact its surroundings".
+        self.spread_size = spread_size
+
         # Discretization of polar space
-        self.context_matrix = _compute_context_matrix(self.context_cues)
-        # self.context_matrix: np.ndarray = _compute_context_matrix(self.__get_cues_as_array()) #@TODO make resolution flexible @TODO only 2 types? idk
+        self.context_matrix = _compute_context_matrix(self.context_cues, spread_size=spread_size)
 
 
     # MOVED TO RANGE SENSOR IMPLEMENTATION
@@ -60,18 +62,16 @@ class OriginalContext(ContextInterface):
     # ---------------------------------------------------------------------------------------------------------
     def occupancy(self, angle: int, distance: int, cue_type: int = ContextCueType.OBSTACLE):
         """returns a 'likelyness' that the point corresponds to a context cue"""
-        #print("occupancy returned", self.context_matrix[angle][distance][int(type_)] )
-        #print("in:", self.context_matrix)
         return self.context_matrix[angle, distance, int(cue_type)]
 
     # ---------------------------------------------------------------------------------------------------------
-    def offset(self, x_offset: float, y_offset: float) -> 'OriginalContext':
+    def offset(self, x_offset: float, y_offset: float, new_spread_size: int = 4) -> 'OriginalContext':
         new_context_cues = _offset_cue_array(self.context_cues, x_offset=x_offset, y_offset=y_offset)
-        return OriginalContext(new_context_cues)
+        return OriginalContext(new_context_cues, new_spread_size)
 
 
     # ---------------------------------------------------------------------------------------------------------
-    # NOTE: better implementation: look up cue in the matrix
+    # NOTE:looks up the new_cues in the matrix (faster)
     def update(self, new_cues: np.ndarray):
         """
         """
@@ -82,43 +82,52 @@ class OriginalContext(ContextInterface):
         
         self.context_cues = np.append(self.context_cues, np.array(new_cues_list))
 
-        self.context_matrix = _compute_context_matrix(self.context_cues)
+        self.context_matrix = _compute_context_matrix(self.context_cues, self.spread_size)
 
+
+    # # ---------------------------------------------------------------------------------------------------------
+    # # NOTE: naive implementation: compare each new_cue with each existing cues (slower)
+    # def update_naive(self, new_cues: np.ndarray):
+    #     """
+    #     updates the context by taking the new markers into account
+
+    #     new markers (new_cues) are expected as an array where each cue is 
+    #     represented by [d, theta, cue_typen d_2] (as defined in cue_array_utility)
+    #     """
+    #     new_cues_list = new_cues.tolist()
+    #     i = 0
+    #     while i < len(new_cues_list):
+    #         new_cue = new_cues_list[i]
+
+    #         d, theta = round(new_cue[0]), round(new_cue[1])
+    #         for cue in self.context_cues:
+    #             if (new_cue[3] == cue[3] and # cues are the same type 
+    #                 d == round(cue[0]) and   # cues have same radial coordinate 
+    #                 theta == round(cue[1])): # cues have same angular coordinate
+    #                 del new_cues_list[i]
+    #                 i -= 1
+    #                 break
+
+    #         i += 1
+
+    #     if len(new_cues_list) == 0:
+    #         return
+    #     # 2. Add the points that 'survived'
+    #     self.context_cues: np.ndarray = np.append(self.context_cues, new_cues_list)
+
+    #     # 3. Update the context matrix (@TODO/WARNING: not same behavior as original impl in place cell)
+    #     # self.__compute_context_matrix()
+    #     self.context_matrix = _compute_context_matrix(self.context_cues, self.spread_size)
 
     # ---------------------------------------------------------------------------------------------------------
-    # NOTE: naive implementation: compare each new cue with each existing cue
-    def update_naive(self, new_cues: np.ndarray):
+    def rotate(self, angle_in_degrees):
         """
-        updates the context by taking the new markers into account
-
-        new markers (new_cues) are expected as an array where each cue is 
-        represented by [d, theta, cue_typen d_2] (as defined in cue_array_utility)
+        Rotates the context by a given angle
         """
-        new_cues_list = new_cues.tolist()
-        i = 0
-        while i < len(new_cues_list):
-            new_cue = new_cues_list[i]
+        new_cues = self.context_cues.copy()
+        new_cues[:, 1] = np.mod(new_cues[:, 1] + angle_in_degrees, 360)
 
-            d, theta = round(new_cue[0]), round(new_cue[1])
-            for cue in self.context_cues:
-                if (new_cue[3] == cue[3] and # cues are the same type 
-                    d == round(cue[0]) and   # cues have same radial coordinate 
-                    theta == round(cue[1])): # cues have same angular coordinate
-                    del new_cues_list[i]
-                    i -= 1
-                    break
-
-            i += 1
-
-        if len(new_cues_list) == 0:
-            return
-        # 2. Add the points that 'survived'
-        self.context_cues: np.ndarray = np.append(self.context_cues, new_cues_list)
-
-        # 3. Update the context matrix (@TODO/WARNING: not same behavior as original impl in place cell)
-        # self.__compute_context_matrix()
-        self.context_matrix = _compute_context_matrix(self.context_cues)
-
+        return OriginalContext(new_cues)
 
     # ---------------------------------------------------------------------------------------------------------
     def update_OLD(self, new_cues: np.ndarray):
@@ -211,9 +220,14 @@ def get_d_2(cue: np.ndarray):
 # =========================================================================================================
 # ---------------------------------------------------------------------------------------------------------
 @njit
-def _compute_context_matrix(context_cues: np.array) -> np.ndarray:
+def _compute_context_matrix(context_cues: np.array, spread_size: int=4) -> np.ndarray:
     """
     compute the context matrix from the list of context cues
+
+    spread_size: the size of the "impact" that each cue makes in the matrix
+    in original code, this is 16 for place cells and 4 for grid cells
+    Also, original code had a bug causing asymetrical "impacts" =, which is fixed in this implementation
+
     NOTE: converting this method to numba JIT requires it to
     not use object attributes, thus the need for arguments
     and return value
@@ -222,17 +236,13 @@ def _compute_context_matrix(context_cues: np.array) -> np.ndarray:
     # The complex matrix is a discretization of polar space
     context_matrix = np.zeros((360,100,2)) #@TODO make resolution flexible @TODO only 2 types?
 
-    # Spread size: the size of the "impact" that each cue makes in the matrix
-    spread_size = 4 # in original code, this is 16 for place cells and 4 for grid cells
-    # Also, original code had a bug causing asymetrical "impacts" =, which is fixed in this implementation
+    
 
     for cue in context_cues:
 
         d_int = int(cue[3]) # @TODO: use d' (tanh form)
         angle_int = int(cue[1]) # @TODO not interchange degrees and indexes
         cue_type = int(cue[2]) # @TODO: filter by type
-
-        #print(angle_int, d_int, cue_type)
 
         # modify the values around the point
         # @TODO: numpy-ify
