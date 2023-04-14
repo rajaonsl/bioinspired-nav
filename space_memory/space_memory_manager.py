@@ -70,8 +70,9 @@ class SpaceMemory:
             # 3.
             # Update place cell context with potentially new information
             # @TODO/NOTE: was -x, -y and 180-theta in original impl ?
-            # NOTE: currently removed for weird angle bug (angle goes negative?)
-            self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
+            # NOTE: currently bugged (angle goes negative?), and deemed not
+            # necessary because of 360 vision
+            # self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
 
             # 4.
             # Change active place cell or creates a new one as needed.
@@ -135,6 +136,7 @@ class SpaceMemory:
         decides when the active place cell should change, and makes the necessary changes.
         """
         estimated_x, estimated_y = self.grid.estimated_relative_x, self.grid.estimated_relative_y
+        estimated_theta = self.grid.angle_estimation
 
         # If there is a neighbor closer than the current cell, switch to it
         neighbor = self.current_place_cell.checkNeighbors(estimated_x, estimated_y) #@TODO implement
@@ -166,7 +168,8 @@ class SpaceMemory:
             else:
                 current_x = self.current_place_cell.global_x + estimated_x 
                 current_y = self.current_place_cell.global_y + estimated_y
-                new_cell = PlaceCell(OriginalContext(sensor_data), global_x=current_x, global_y=current_y) # @TODO/WARNING DOESNT WORK !!!!!!! IMPLEMENT CREATION OF CONTEXT FROM RAW SENSOR DATA !!!!
+                current_context = OriginalContext(sensor_data).rotate(-1*estimated_theta) # Reset angle
+                new_cell = PlaceCell(current_context, global_x=current_x, global_y=current_y) # @TODO/WARNING DOESNT WORK !!!!!!! IMPLEMENT CREATION OF CONTEXT FROM RAW SENSOR DATA !!!!
 
                 self.current_place_cell.addNeighbor(new_cell)
                 self.place_cells_list.append(new_cell)
