@@ -84,7 +84,7 @@ class GridCluster:
             cell: GridCell
             for j,cell in enumerate(row):
                 #cell.compute(observation)
-                cell.faster_compute(observation)
+                cell.compute(observation)
                 #@TODO make flexible
                 for k in range(-8, 9):
                     d = (cell.max_activity_angle + k) % 360
