@@ -39,6 +39,9 @@ class SpaceMemory:
             # Initialize various parameters
             #   - defines required activity for a place cell to become active
             self.place_cell_activity_floor = 15
+            #   - defines the "tolerance" of context comparison for place/grid cells
+            self.grid_cell_spread_size = 4
+            self.place_cell_spread_size = 16
 
         # results = pstats.Stats(profile)
         # results.sort_stats(pstats.SortKey.TIME)
@@ -62,16 +65,16 @@ class SpaceMemory:
 
             # 2.
             # Extract estimated pose
-            scale = self.grid.scale
-            estimated_x = self.grid.estimated_relative_x * scale
-            estimated_y = self.grid.estimated_relative_y * scale
-            estimated_theta = self.grid.angle_estimation
+            # scale = self.grid.scale
+            # estimated_x = self.grid.estimated_relative_x * scale
+            # estimated_y = self.grid.estimated_relative_y * scale
+            # estimated_theta = self.grid.angle_estimation
 
             # 3.
             # Update place cell context with potentially new information
             # @TODO/NOTE: was -x, -y and 180-theta in original impl ?
-            # NOTE: currently bugged (angle goes negative?), and deemed not
-            # necessary because of 360 vision
+            # NOTE: currently bugged (angle goes negative?), and DEEMED NOT
+            # NECESSARY BECAUSE OF 360 VISION
             # self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
 
             # 4.
@@ -168,7 +171,7 @@ class SpaceMemory:
             else:
                 current_x = self.current_place_cell.global_x + estimated_x 
                 current_y = self.current_place_cell.global_y + estimated_y
-                current_context = OriginalContext(sensor_data).rotate(-1*estimated_theta) # Reset angle
+                current_context = OriginalContext(sensor_data).rotate(-1*estimated_theta) # Reset angle @TODO slight inefficiency (should rotate sensor_data instead)
                 new_cell = PlaceCell(current_context, global_x=current_x, global_y=current_y) # @TODO/WARNING DOESNT WORK !!!!!!! IMPLEMENT CREATION OF CONTEXT FROM RAW SENSOR DATA !!!!
 
                 self.current_place_cell.addNeighbor(new_cell)
@@ -179,11 +182,4 @@ class SpaceMemory:
         else:
             pass
     
-
-    #-------------------------------------------------------------------
-    # @TODO: remove
-    def debug(self):
-        print(self.grid)
-        print(self.grid.activity)
-
     # @TODO: add shortcut detection, but probably not here!
