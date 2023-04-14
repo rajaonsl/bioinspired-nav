@@ -7,7 +7,7 @@ import numpy as np
 from sensory_system.range_sensor import RangeSensor
 from space_memory.place_cell import PlaceCell
 from space_memory.grid_cluster import GridCluster 
-from sensory_system.original_context import OriginalContext
+from sensory_system.original_context import OriginalContext, create_cue, get_d, get_theta, get_cue_type
 from utils.misc import polar_to_cartesian
 
 class SpaceMemory:
@@ -71,7 +71,7 @@ class SpaceMemory:
             # Update place cell context with potentially new information
             # @TODO/NOTE: was -x, -y and 180-theta in original impl ?
             # NOTE: currently removed for performance (IIRC?)
-            self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
+            # self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
 
             # 4.
             # Change active place cell or creates a new one as needed.
@@ -101,11 +101,11 @@ class SpaceMemory:
         relative_y *= -1
         theta = math.radians(180 - theta) # @TODO: this looks to be FOV dependant, update
 
-        centered_sensor_data: np.ndarray = np.empty(len(sensor_data), dtype=object)
-        point: ContextCue
-        for i,point in enumerate(sensor_data):
+        centered_sensor_data: np.ndarray = np.zeros((len(sensor_data),4)) #@TODO BAD DESIGN PATTERN don't hardcode cue array type here
+
+        for i,point in enumerate(sensor_data): # Point is represented as cues in original context (numeric ndarray)
             # @TODO rotation using matrix multiplication by hand, use numpy instead
-            point_x, point_y = polar_to_cartesian(point.d, point.theta)
+            point_x, point_y = polar_to_cartesian(d=get_d(point),theta=get_theta(point))
 
             x = (point_x*math.cos(theta) - point_y*math.sin(theta)) - relative_x
             y = (point_x*math.sin(theta) + point_y*math.cos(theta)) - relative_y
@@ -113,7 +113,11 @@ class SpaceMemory:
             d = math.sqrt(x*x + y*y)
             t = math.degrees(math.atan2(y,x))
 
-            centered_sensor_data[i] = ContextCue(d, t, point.cue_type)
+            centered_sensor_data[i] = create_cue(distance=d, theta=t, cue_type=get_cue_type(point))
+        
+        print(sensor_data)
+        print("================")
+        print(centered_sensor_data)
 
         self.current_place_cell.context.update(centered_sensor_data)
         self.grid.set_place_cell(self.current_place_cell) # update context of all grid cells in module

@@ -97,13 +97,14 @@ class GridCell:
     #-------------------------------------------------------------------
     def faster_compute(self, observation: np.ndarray):
         assert self.context is not None
-        obs_as_array = np.array([(int(cue.theta), int(cue.d_2), int(cue.cue_type)) for cue in observation])
+        # OLD CODE: cue as object
+        # obs_as_array = np.array([(int(cue.theta), int(cue.d_2), int(cue.cue_type)) for cue in observation])
         self.activity, self.max_activity, self.max_activity_angle =\
-            numba_fast_compute(self.context.context_matrix, obs_as_array)
+            numba_fast_compute(self.context.context_matrix, observation)
 
 
 @njit
-def numba_fast_compute(context_matrix: np.ndarray, observation: np.ndarray):
+def numba_fast_compute(context_matrix: np.ndarray, observation: np.ndarray): #@TODO: move in OriginalContext
     """
     Compute the activity of the cell for a given observation using a faster numpy implementation.
     Expects two numpy arrays of int
@@ -124,9 +125,11 @@ def numba_fast_compute(context_matrix: np.ndarray, observation: np.ndarray):
         # of a skill issue 
         for ctx_cue in observation:
             # @TODO NOTE: weird stuff in original code, see if it was important
-            theta = (ctx_cue[0] + i) % 360
+            theta = (int(ctx_cue[1]) + i) % 360
+            d_2 = int(ctx_cue[3])
+            cue_type = int(ctx_cue[2]) #@TODO: replace manual indexing with getters
             #val = get_occupancy(theta, int(ctx_cue.d_2), ctx_cue.cue_type)
-            val = context_matrix[theta][ctx_cue[1]][ctx_cue[2]]
+            val = context_matrix[theta][d_2][cue_type]
             sum_ += val
 
         # @TODO

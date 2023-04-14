@@ -1,0 +1,5 @@
+
+sensory_system/__pycache__/
+space_memory/__pycache__/
+*.py[cod]
+*.pyc

@@ -1,4 +1,9 @@
 """
+@TODO REMOVE FILE
+@TODO REMOVE FILE
+@TODO REMOVE FILE
+@TODO REMOVE FILE
+@TODO REMOVE FILE
 This module includes utility functions for manipulating arrays of cues.
 
 For performance reasons, cues are not represented as their own objects, but
@@ -16,21 +21,32 @@ class ContextCueType(IntEnum):
     CORNER = 1
     LANDMARK = 2
 
-@njit
-def offset(cue_array, x_offset, y_offset) -> np.ndarray:
-    """
-    shift all context cues by cartesian offset
-    """
-    x = np.cos(np.radians(cue_array[:, 1])) * cue_array[:, 0] + x_offset
-    y = np.sin(np.radians(cue_array[:, 1])) * cue_array[:, 0] + y_offset
+# @njit
+# def offset(cue_array, x_offset, y_offset) -> np.ndarray:
+#     """
+#     Shift all context cues by cartesian offset
+#     """
+#     x = np.cos(np.radians(cue_array[:, 1])) * cue_array[:, 0] + x_offset
+#     y = np.sin(np.radians(cue_array[:, 1])) * cue_array[:, 0] + y_offset
 
-    d = np.sqrt(x**2 + y**2)
-    theta = np.degrees(np.arctan2(y, x))
-    d_2 = 100*np.tanh(d/100)
-    return np.column_stack((d, theta,cue_array[:, 2], d_2))
+#     d = np.sqrt(x**2 + y**2)
+#     theta = np.degrees(np.arctan2(y, x))
+#     d_2 = 100*np.tanh(d/100)
+#     return np.column_stack((d, theta,cue_array[:, 2], d_2))
 
-def create_cue(distance, theta, cue_type: int=0):
-    """
-    Create a proper cue from distance and theta
-    """
-    return np.array(distance, theta, cue_type, 100*np.tanh(distance/100))
+# def select_new_cues(new_cues_array, occupancy_matrix):
+#     """
+#     Select the cues that weren't previously known.
+    
+#     cues: [d, theta, cue_type, d_2]
+#     occupancy_matrix: 3D (theta, d, type)
+
+#     This method selects all cues such that their corresponding
+#     value in the matrix is not 1.
+#     """
+
+# def create_cue(distance, theta, cue_type: int=0):
+#     """
+#     Create a proper cue from distance and theta
+#     """
+#     return np.array(distance, theta, cue_type, 100*np.tanh(distance/100))

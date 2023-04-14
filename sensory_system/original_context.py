@@ -4,27 +4,38 @@ the context used for grid cells in the original (java) implementation
 
 import numpy as np
 from numba import njit
+from enum import IntEnum  #@TODO: investigate fastenum
 
-# from sensory_system.context_cue import ContextCue, ContextCueType
 from sensory_system.context_interface import ContextInterface
-import sensory_system.cue_array_utility as cue_array_utility
-
-# @TODO list of assumptions ( '~~' = 'to make flexible)
-# 1.
 
 # @TODO find better name
+# =========================================================================================================
+class ContextCueType(IntEnum):
+    OBSTACLE = 0 # is 0 ok ?
+    CORNER = 1
+    LANDMARK = 2
+
+# ========================================================================================================= 
 class OriginalContext(ContextInterface):
     """
-    Context, as conceived in the original (java) implementation
+    This class represents environmental contexts as conceived in the original (java) implementation.
     """
 
+    # ---------------------------------------------------------------------------------------------------------
+    #@TODO: reconsider input
     def __init__(self, context_cues: np.ndarray):
         """
         context cues are expected as a numpy array of context cues (type ContextCue)
         """
+        # An array of all context cues. each cue is represented with [d, theta, type, d_2]
+        # where theta: angular coordinate
+        #       d radial coordinate
+        #       type of cue (integer)
+        #       d_2 radial coordinate scaled by 100*tanh(d/100)
         self.context_cues: np.ndarray = context_cues
+
         # Discretization of polar space
-        self.context_matrix = _compute_context_matrix(self.__get_cues_as_array())
+        self.context_matrix = _compute_context_matrix(self.context_cues)
         # self.context_matrix: np.ndarray = _compute_context_matrix(self.__get_cues_as_array()) #@TODO make resolution flexible @TODO only 2 types? idk
 
 
@@ -46,17 +57,71 @@ class OriginalContext(ContextInterface):
     #     new_context = cls(context_cues)
     #     return new_context
 
-    def occupancy(self, angle: int, distance: int, cue_type: int = cue_array_utility.ContextCueType.OBSTACLE):
+    # ---------------------------------------------------------------------------------------------------------
+    def occupancy(self, angle: int, distance: int, cue_type: int = ContextCueType.OBSTACLE):
         """returns a 'likelyness' that the point corresponds to a context cue"""
         #print("occupancy returned", self.context_matrix[angle][distance][int(type_)] )
         #print("in:", self.context_matrix)
-        return self.context_matrix[angle][distance][int(cue_type)]
+        return self.context_matrix[angle, distance, int(cue_type)]
 
+    # ---------------------------------------------------------------------------------------------------------
     def offset(self, x_offset: float, y_offset: float) -> 'OriginalContext':
-        new_context_cues = cue_array_utility.offset(self.context_cues, x_offset=x_offset, y_offset=y_offset)
+        new_context_cues = _offset_cue_array(self.context_cues, x_offset=x_offset, y_offset=y_offset)
         return OriginalContext(new_context_cues)
 
+
+    # ---------------------------------------------------------------------------------------------------------
+    # NOTE: better implementation: look up cue in the matrix
     def update(self, new_cues: np.ndarray):
+        """
+        """
+        new_cues_list = []
+        for cue in new_cues:
+            if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] != 1.:
+                new_cues_list.append(cue)
+        
+        self.context_cues = np.append(self.context_cues, np.array(new_cues_list))
+
+        self.context_matrix = _compute_context_matrix(self.context_cues)
+
+
+    # ---------------------------------------------------------------------------------------------------------
+    # NOTE: naive implementation: compare each new cue with each existing cue
+    def update_naive(self, new_cues: np.ndarray):
+        """
+        updates the context by taking the new markers into account
+
+        new markers (new_cues) are expected as an array where each cue is 
+        represented by [d, theta, cue_typen d_2] (as defined in cue_array_utility)
+        """
+        new_cues_list = new_cues.tolist()
+        i = 0
+        while i < len(new_cues_list):
+            new_cue = new_cues_list[i]
+
+            d, theta = round(new_cue[0]), round(new_cue[1])
+            for cue in self.context_cues:
+                if (new_cue[3] == cue[3] and # cues are the same type 
+                    d == round(cue[0]) and   # cues have same radial coordinate 
+                    theta == round(cue[1])): # cues have same angular coordinate
+                    del new_cues_list[i]
+                    i -= 1
+                    break
+
+            i += 1
+
+        if len(new_cues_list) == 0:
+            return
+        # 2. Add the points that 'survived'
+        self.context_cues: np.ndarray = np.append(self.context_cues, new_cues_list)
+
+        # 3. Update the context matrix (@TODO/WARNING: not same behavior as original impl in place cell)
+        # self.__compute_context_matrix()
+        self.context_matrix = _compute_context_matrix(self.context_cues)
+
+
+    # ---------------------------------------------------------------------------------------------------------
+    def update_OLD(self, new_cues: np.ndarray):
         """
         updates the context by taking the new markers into account.
 
@@ -101,18 +166,50 @@ class OriginalContext(ContextInterface):
 
         # 3. Update the context matrix (@TODO/WARNING: not same behavior as original impl in place cell)
         # self.__compute_context_matrix()
-        self.context_matrix = _compute_context_matrix(self.__get_cues_as_array())
+        self.context_matrix = _compute_context_matrix(self.context_cues)
 
+    # OLD METHOD for converting array of ContextCue to numeric array
+    # def __get_cues_as_array(self):
 
-    def __get_cues_as_array(self):
-
-        # @TODO: put this in an njit function to avoid boxing overhead (as context_cues are a jitclass)
-        return np.array([(int(cue.theta) % 360, int(cue.d_2), int(cue.cue_type)) for cue in self.context_cues])
-        #return self.context_cues.tolist()
-        
+    #     # @TODO: put this in an njit function to avoid boxing overhead (as context_cues are a jitclass)
+    #     return np.array([(int(cue.theta) % 360, int(cue.d_2), int(cue.cue_type)) for cue in self.context_cues])
+    #     #return self.context_cues.tolist()   
 
 # =========================================================================================================
-# SINGLE METHOD JIT (@TODO with jitclass)
+# UTILS
+# ---------------------------------------------------------------------------------------------------------
+def create_cue(distance, theta, cue_type: int=0):
+    """
+    Create a proper cue from distance and theta
+    """
+    return np.array([distance, theta, cue_type, 100*np.tanh(distance/100)])
+
+def cues_array_to_cartesian(array: np.ndarray):
+    x = np.cos(np.radians(array[:, 1])) * array[:, 0]
+    y = np.sin(np.radians(array[:, 1])) * array[:, 0]
+
+    return x,y
+
+@njit # njit on these? really? lol
+def get_d(cue: np.ndarray):
+    return cue[0]
+
+@njit
+def get_theta(cue: np.ndarray):
+    return cue[1]
+
+@njit
+def get_cue_type(cue: np.ndarray):
+    return cue[2]
+
+@njit
+def get_d_2(cue: np.ndarray):
+    return cue[3]
+
+# =========================================================================================================
+# METHODS OPTIMIZED WITH NUMBA
+# =========================================================================================================
+# ---------------------------------------------------------------------------------------------------------
 @njit
 def _compute_context_matrix(context_cues: np.array) -> np.ndarray:
     """
@@ -131,9 +228,9 @@ def _compute_context_matrix(context_cues: np.array) -> np.ndarray:
 
     for cue in context_cues:
 
-        angle_int = cue[0] # @TODO not interchange degrees and indexes
-        d_int = cue[1] # @TODO: use d' (tanh form)
-        cue_type = cue[2] # @TODO: filter by type
+        d_int = int(cue[3]) # @TODO: use d' (tanh form)
+        angle_int = int(cue[1]) # @TODO not interchange degrees and indexes
+        cue_type = int(cue[2]) # @TODO: filter by type
 
         #print(angle_int, d_int, cue_type)
 
@@ -149,6 +246,20 @@ def _compute_context_matrix(context_cues: np.array) -> np.ndarray:
                     if val > context_matrix[angle_as_index][dist_as_index][cue_type]:
                         context_matrix[angle_as_index][dist_as_index][cue_type] = val
     return context_matrix
+
+# ---------------------------------------------------------------------------------------------------------
+@njit
+def _offset_cue_array(cue_array, x_offset, y_offset) -> np.ndarray:
+    """
+    Shift all context cues by cartesian offset
+    """
+    x = np.cos(np.radians(cue_array[:, 1])) * cue_array[:, 0] + x_offset
+    y = np.sin(np.radians(cue_array[:, 1])) * cue_array[:, 0] + y_offset
+
+    d = np.sqrt(x**2 + y**2)
+    theta = np.degrees(np.arctan2(y, x))
+    d_2 = 100*np.tanh(d/100)
+    return np.column_stack((d, theta,cue_array[:, 2], d_2))
 
     # =========================================================================================================
     # NAIVE IMPLEMENTATION.

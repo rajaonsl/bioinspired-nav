@@ -72,7 +72,8 @@ class GridCluster:
 
     #-------------------------------------------------------------------
     def compute(self, observation: np.ndarray):
-        """ Compute the activity of all grid cells in the module.
+        """
+        Compute the activity of all grid cells in the module.
         expects a numpy array of context cues (ContextCue)
         result is stored in self
         """

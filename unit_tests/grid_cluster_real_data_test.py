@@ -1,7 +1,7 @@
 import os
 import unittest
 import numpy as np
-from sensory_system.original_context import OriginalContext
+from sensory_system.original_context import OriginalContext, get_theta, get_d, get_cue_type, get_d_2
 from sensory_system.turtlebot3_range_sensor import TurtlebotRangeSensor
 from space_memory.grid_cell import GridCell
 
@@ -77,9 +77,10 @@ class TestGridClusterRealData(unittest.TestCase):
         self.assertEqual(len(ctx1.context_cues), len(ctx2.context_cues))
         for i, context_cue in enumerate(ctx1.context_cues):
             context_cue_2 = ctx2.context_cues[i]
-            self.assertEqual(context_cue.d, context_cue_2.d)
-            self.assertEqual(context_cue.d_2, context_cue_2.d_2)
-            self.assertEqual(context_cue.theta, context_cue_2.theta)
+            self.assertEqual(get_d(context_cue), get_d(context_cue_2))
+            self.assertEqual(get_d_2(context_cue), get_d_2(context_cue_2))
+            self.assertEqual(get_cue_type(context_cue), get_cue_type(context_cue_2))
+            self.assertEqual(get_theta(context_cue), get_theta(context_cue_2))
 
 def get_test_ranges_path():
     test_dir = os.path.dirname(os.path.abspath(__file__))
