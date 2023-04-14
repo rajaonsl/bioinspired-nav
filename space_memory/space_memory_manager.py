@@ -70,8 +70,8 @@ class SpaceMemory:
             # 3.
             # Update place cell context with potentially new information
             # @TODO/NOTE: was -x, -y and 180-theta in original impl ?
-            # NOTE: currently removed for performance (IIRC?)
-            # self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
+            # NOTE: currently removed for weird angle bug (angle goes negative?)
+            self.__update_context(sensor_cues, estimated_x, estimated_y, estimated_theta)
 
             # 4.
             # Change active place cell or creates a new one as needed.
@@ -88,6 +88,7 @@ class SpaceMemory:
     # @TODO: reconsider type of sensor_data 
     # WARNING: CURRENTLY DOESN'T WORK !!!! assumed to be array of ctx clues, but called with raw sensor data ! )
     # @TODO-2: most of this code should really be in PlaceCell and Context instead of here
+    # @TODO-3: numpy-ify
     def __update_context(self, sensor_data: np.ndarray, relative_x: float, relative_y: float, theta: float):
         """
         updates the context of the current place cell
@@ -97,22 +98,25 @@ class SpaceMemory:
         # in order to get the *exact* same behavior. However, the way that this method works
         # is questionnable style-wise, perfomance-wise AND on a higher conceptual level. 
         # @TODO: Reconsider implementation
-        relative_x *= -1
+        relative_x *= -1 # sure about double minus??? huh
         relative_y *= -1
-        theta = math.radians(180 - theta) # @TODO: this looks to be FOV dependant, update
+        theta *= -1
+        print("translating x", relative_x, "y", relative_y, "rotating", theta)
+
+        #theta = math.radians(180 - theta) # @TODO: this looks to be FOV dependant, update
+        theta = math.radians(theta)#math.radians(180 - theta)
 
         centered_sensor_data: np.ndarray = np.zeros((len(sensor_data),4)) #@TODO BAD DESIGN PATTERN don't hardcode cue array type here
-
         for i,point in enumerate(sensor_data): # Point is represented as cues in original context (numeric ndarray)
             # @TODO rotation using matrix multiplication by hand, use numpy instead
             point_x, point_y = polar_to_cartesian(d=get_d(point),theta=get_theta(point))
 
             x = (point_x*math.cos(theta) - point_y*math.sin(theta)) - relative_x
             y = (point_x*math.sin(theta) + point_y*math.cos(theta)) - relative_y
-
             d = math.sqrt(x*x + y*y)
-            t = math.degrees(math.atan2(y,x))
+            t = math.degrees(math.atan2(y, x))
 
+            print("x", x, "y", y, " -> theta", t%360)
             centered_sensor_data[i] = create_cue(distance=d, theta=t, cue_type=get_cue_type(point))
         
         print(sensor_data)

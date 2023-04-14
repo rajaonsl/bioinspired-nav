@@ -57,18 +57,15 @@ class GridClusterVisualizer:
                 color = self._getcolor(max_activity)
                 self.canvas.itemconfig(self.activities[i][j], fill=color)
         self.window.update()
-        # print("updated display!")
-        # self.canvas.create_oval(20,20,120,120, fill='red')
 
     def _plot_activity(self, x0, y0, x1, y1, color):
         return self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="")
     
     def _getcolor(self, activity: float) -> str:
         #green = int(activity * 255) # assumes activity between 0. and 1.
-        red = int(activity * 360) # Flashier for poster
+        red = int(activity * 365) # Flashier for poster
         red = min(255, red)
-        #green = max(0, blue - 100) 
-        green = int(red * 0.4) 
+        green = int(red * 0.4)
         blue = 255 - red
         return f"#{red:02x}{green:02x}{blue:02x}"
     
