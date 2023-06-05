@@ -45,13 +45,7 @@ def numba_fast_compute(context_matrix: np.ndarray, observation: np.ndarray): #@T
     for i, _ in enumerate(activity):
 
         sum_ = 0.
-
-        # performance hack to avoid method lookup in loop
-        # get_occupancy = self.context.occupancy
         
-        # @TODO
-        # This should work in my head, however it appears that I am victim
-        # of a skill issue 
         for ctx_cue in observation:
             # @TODO NOTE: weird stuff in original code, see if it was important
             theta = (int(ctx_cue[1]) + i) % 360
@@ -60,10 +54,6 @@ def numba_fast_compute(context_matrix: np.ndarray, observation: np.ndarray): #@T
             #val = get_occupancy(theta, int(ctx_cue.d_2), ctx_cue.cue_type)
             val = context_matrix[theta][d_2][cue_type]
             sum_ += val
-
-        # @TODO
-        # Temporary code that *definitely works* but is uglier than what's above :/
-        # <nothing> lol
 
         activity[i] = sum_**2/(len(observation)**2)
         if activity[i] > max_activity:

@@ -23,7 +23,7 @@ class OriginalContext(ContextInterface):
 
     # ---------------------------------------------------------------------------------------------------------
     #@TODO: reconsider input
-    def __init__(self, context_cues: np.ndarray, spread_size):
+    def __init__(self, context_cues: np.ndarray, spread_size: int=4):
         """
         context cues are expected as a numpy array of context cues (type ContextCue)
         """

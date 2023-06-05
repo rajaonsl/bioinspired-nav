@@ -14,7 +14,7 @@ class RangeSensor:
         self.min_range = min_range
         self.field_of_view = field_of_view
 
-    def process_acquisition(self, raw_sensor_data: np.ndarray) -> ContextInterface:
+    def process_acquisition(self, raw_sensor_data: np.ndarray, spread_size: int=16) -> ContextInterface:
         pass
         # cues_list = [] # @TODO: numpy?
         # angle = 0

@@ -19,29 +19,31 @@ class SpaceMemory:
     #-------------------------------------------------------------------
     # @TODO: reconsider sensor_data as an argument for construction
     def __init__(self, sensor_data: np.ndarray, sensor_data_processor: RangeSensor,
-                 scale: int=3): 
+                 scale: int=3):
         # with cProfile.Profile() as profile:
-            
-            # Save sensor info
-            #@TODO use this more (especially FOV!)
-            self.sensor_data_processor: RangeSensor = sensor_data_processor
 
-            # Initialize the first place cell
-            self.place_cells_list: list[PlaceCell] = []
-            place_cell_context = sensor_data_processor.process_acquisition(sensor_data) #@TODO, fov_180=False)
-            self.place_cells_list.append(PlaceCell(place_cell_context)) #@TODO: specify context interface
-            self.current_place_cell = self.place_cells_list[0]
+        # Initialize various parameters
+        #   - defines required activity for a place cell to become active
+        self.place_cell_activity_floor = 250
+        #   - defines the "tolerance" of context comparison for place/grid cells
+        self.grid_cell_spread_size = 4
+        self.place_cell_spread_size = 16
 
-            # Initialize the module (only one, reused when active cell changes)
-            self.grid: GridCluster = GridCluster(scale=scale)
-            self.grid.set_place_cell(self.current_place_cell)
+        # Save sensor info
+        #@TODO use this more (especially FOV!)
+        self.sensor_data_processor: RangeSensor = sensor_data_processor
 
-            # Initialize various parameters
-            #   - defines required activity for a place cell to become active
-            self.place_cell_activity_floor = 15
-            #   - defines the "tolerance" of context comparison for place/grid cells
-            self.grid_cell_spread_size = 4
-            self.place_cell_spread_size = 16
+        # Initialize the first place cell
+        self.place_cells_list: list[PlaceCell] = []
+        place_cell_context = sensor_data_processor.process_acquisition(sensor_data,
+                                                                       spread_size=self.place_cell_spread_size) #@TODO, fov_180=False)
+        self.place_cells_list.append(PlaceCell(place_cell_context)) #@TODO: specify context interface
+        self.current_place_cell = self.place_cells_list[0]
+
+        # Initialize the module (only one, reused when active cell changes)
+        self.grid: GridCluster = GridCluster(scale=scale)
+        self.grid.set_place_cell(self.current_place_cell)
+
 
         # results = pstats.Stats(profile)
         # results.sort_stats(pstats.SortKey.TIME)
@@ -83,14 +85,14 @@ class SpaceMemory:
 
         results = pstats.Stats(profile)
         results.sort_stats(pstats.SortKey.TIME)
-        results.print_stats()
+        #results.print_stats()
         results.dump_stats("/home/ubuntu/share/update_profile.prof")
         results.dump_stats("update_profile.prof")
 
 
     #-------------------------------------------------------------------
+    # @TODO: Currently bugged, and unused. Fix because can be useful in reduced FOV scenario
     # @TODO: reconsider type of sensor_data 
-    # WARNING: CURRENTLY DOESN'T WORK !!!! assumed to be array of ctx clues, but called with raw sensor data ! )
     # @TODO-2: most of this code should really be in PlaceCell and Context instead of here
     # @TODO-3: numpy-ify
     def __update_context(self, sensor_data: np.ndarray, relative_x: float, relative_y: float, theta: float):
@@ -105,7 +107,6 @@ class SpaceMemory:
         relative_x *= -1 # sure about double minus??? huh
         relative_y *= -1
         theta *= -1
-        print("translating x", relative_x, "y", relative_y, "rotating", theta)
 
         #theta = math.radians(180 - theta) # @TODO: this looks to be FOV dependant, update
         theta = math.radians(theta)#math.radians(180 - theta)
@@ -120,13 +121,8 @@ class SpaceMemory:
             d = math.sqrt(x*x + y*y)
             t = math.degrees(math.atan2(y, x))
 
-            print("x", x, "y", y, " -> theta", t%360)
             centered_sensor_data[i] = create_cue(distance=d, theta=t, cue_type=get_cue_type(point))
-        
-        print(sensor_data)
-        print("================")
-        print(centered_sensor_data)
-
+    
         self.current_place_cell.context.update(centered_sensor_data)
         self.grid.set_place_cell(self.current_place_cell) # update context of all grid cells in module
 
@@ -171,7 +167,7 @@ class SpaceMemory:
             else:
                 current_x = self.current_place_cell.global_x + estimated_x 
                 current_y = self.current_place_cell.global_y + estimated_y
-                current_context = OriginalContext(sensor_data).rotate(-1*estimated_theta) # Reset angle @TODO slight inefficiency (should rotate sensor_data instead)
+                current_context = OriginalContext(sensor_data, self.place_cell_spread_size).rotate(-1*estimated_theta) # Reset angle @TODO slight inefficiency (should rotate sensor_data instead)
                 new_cell = PlaceCell(current_context, global_x=current_x, global_y=current_y) # @TODO/WARNING DOESNT WORK !!!!!!! IMPLEMENT CREATION OF CONTEXT FROM RAW SENSOR DATA !!!!
 
                 self.current_place_cell.addNeighbor(new_cell)
