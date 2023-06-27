@@ -16,6 +16,7 @@ class GridCellVisualizer:
         self.height = self.width
         self.radius = 250 
         self.window = tk.Tk()
+        self.window.title("Grid cell activation (by orientation)")
         self.canvas = tk.Canvas(self.window, width=self.width, height=self.height, bg="white")
         self.canvas.grid(row=1,column=1)
         

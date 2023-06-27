@@ -24,6 +24,7 @@ class SpaceMemory:
         self.place_cell_activity_floor = 250 # required activity for a place cell to become active
         self.grid_cell_spread_size = 4 # "tolerance" of context comparison for grid cells # @TODO move to OriginalContext
         self.place_cell_spread_size = 16 # same but for place cells # @TODO move to OriginalContext
+        self.scale = scale
 
         # Save sensor info
         #@TODO use this more (especially FOV!)
@@ -37,7 +38,7 @@ class SpaceMemory:
         self.current_place_cell = self.place_cells_list[0]
 
         # Initialize the module (only one, reused when active cell changes)
-        self.grid: GridCluster = GridCluster(scale=scale)
+        self.grid: GridCluster = GridCluster(scale=self.scale)
         self.grid.set_place_cell(self.current_place_cell)
 
     #-------------------------------------------------------------------
@@ -57,9 +58,9 @@ class SpaceMemory:
             # 2.
             # Extract estimated pose
             # scale = self.grid.scale
-            # estimated_x = self.grid.estimated_relative_x * scale
-            # estimated_y = self.grid.estimated_relative_y * scale
-            # estimated_theta = self.grid.angle_estimation
+            estimated_x = self.grid.estimated_relative_x * self.scale
+            estimated_y = self.grid.estimated_relative_y * self.scale
+            estimated_theta = self.grid.angle_estimation
 
             # 3.
             # Update place cell context with potentially new information
@@ -91,22 +92,21 @@ class SpaceMemory:
         # NOTE/WARNING:
         # The following portion of code is ported "as is" from the original implementation
         # in order to get the *exact* same behavior. However, the way that this method works
-        # is questionnable style-wise, perfomance-wise AND on a higher conceptual level. 
+        # is questionnable style-wise, perfomance-wise (and on a higher conceptual level in
+        # the case of a robot with 360° vision). 
         # @TODO: Reconsider implementation
-        relative_x *= -1 # sure about double minus??? huh
-        relative_y *= -1
-        theta *= -1
 
         #theta = math.radians(180 - theta) # @TODO: this looks to be FOV dependant, update
         theta = math.radians(theta)#math.radians(180 - theta)
 
         centered_sensor_data: np.ndarray = np.zeros((len(sensor_data),4)) #@TODO BAD DESIGN PATTERN don't hardcode cue array type here
+        
         for i,point in enumerate(sensor_data): # Point is represented as cues in original context (numeric ndarray)
             # @TODO rotation using matrix multiplication by hand, use numpy instead
             point_x, point_y = polar_to_cartesian(d=get_d(point),theta=get_theta(point))
 
-            x = (point_x*math.cos(theta) - point_y*math.sin(theta)) - relative_x
-            y = (point_x*math.sin(theta) + point_y*math.cos(theta)) - relative_y
+            x = (point_x*math.cos(theta) - point_y*math.sin(theta)) + relative_x
+            y = (point_x*math.sin(theta) + point_y*math.cos(theta)) + relative_y
             d = math.sqrt(x*x + y*y)
             t = math.degrees(math.atan2(y, x))
 

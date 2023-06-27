@@ -75,7 +75,7 @@ class OriginalContext(Context):
             if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] != 1.: # NOTE/@TODO: use getters
                 new_cues_list.append(cue)
         
-        self.context_cues = np.append(self.context_cues, np.array(new_cues_list))
+        self.context_cues = np.vstack((self.context_cues, np.array(new_cues_list)))
 
         self.context_matrix = _compute_context_matrix(self.context_cues, self.spread_size)
 
@@ -135,7 +135,7 @@ def get_d_2(cue: np.ndarray):
 # =========================================================================================================
 # ---------------------------------------------------------------------------------------------------------
 @njit
-def _compute_context_matrix(context_cues: np.array, spread_size: int=4) -> np.ndarray:
+def _compute_context_matrix(context_cues: np.ndarray, spread_size: int=4) -> np.ndarray:
     """
     compute the context matrix from the list of context cues
 
@@ -152,7 +152,6 @@ def _compute_context_matrix(context_cues: np.array, spread_size: int=4) -> np.nd
     context_matrix = np.zeros((360,100,2)) #@TODO make resolution flexible @TODO only 2 types?    
 
     for cue in context_cues:
-
         # @TODO: use getters
         d_int = int(cue[3]) # @TODO: use d' (tanh form)
         angle_int = int(cue[1]) # @TODO not interchange degrees and indexes

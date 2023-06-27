@@ -2,22 +2,29 @@ import tkinter as tk
 
 from space_memory.space_memory_manager import SpaceMemory
 from space_memory.place_cell import PlaceCell
+from visualization.matrix_visualizer import MatrixVisualizer
 
 class SpaceMemoryVisualizer:
     """
     Displays the graph of place cells.
     X and Y are inverted so that forward is up
     """
-    def __init__(self, space_memory: SpaceMemory) -> None:
+    def __init__(self, space_memory: SpaceMemory, display_context = True) -> None:
         self.width = 700
         self.height = self.width
         self.window = tk.Tk()
+        self.window.title("Place cells graph")
         self.canvas = tk.Canvas(self.window, width=self.width, height=self.height, bg="white")
         self.canvas.grid(row=1, column=1)
 
         self.scaling = 8 # pixels per distance unit
 
         self.space_memory = space_memory
+
+        self.context_visualizer = MatrixVisualizer(
+            matrix=self.space_memory.current_place_cell.context.context_matrix[:,:,0].T,\
+            title="Context of currently active Place Cell") if display_context\
+            else None
 
     def update(self):
         """
@@ -39,6 +46,10 @@ class SpaceMemoryVisualizer:
 
             self._plot_cell(plot_x, plot_y, color, is_active=(place_cell == self.space_memory.current_place_cell))
             self._draw_connections(place_cell)
+
+        if self.context_visualizer is not None:
+            self.context_visualizer.update(new_matrix=
+                                           self.space_memory.current_place_cell.context.context_matrix[:,:,0].T)
 
 
     def _get_color(self, activity):

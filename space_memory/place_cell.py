@@ -35,13 +35,14 @@ class PlaceCell:
         # better: move compute to originalcontext
 
     #-------------------------------------------------------------------
-    def addNeighbor(self, other: 'PlaceCell'):
+    def addNeighbor(self, other: 'PlaceCell', reciprocity: bool=True):
         """ Add neighboring place cell """
         if other.id in self.__neighbors_ids:
             return
         
         self.neighbors.append(other)
-        other.addNeighbor(self) # Reciprocity
+        if reciprocity:
+            other.addNeighbor(self, reciprocity=False) # Reciprocity
         self.__neighbors_ids.append(other.id)
 
 

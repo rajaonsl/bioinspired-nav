@@ -47,8 +47,6 @@ class TurtlebotRangeSensor(RangeSensor):
         valid_distances_index = np.logical_and(raw_sensor_data > min_range, raw_sensor_data < max_range).nonzero()[0]
         raw_sensor_data = _scale_values(raw_sensor_data, self.min_range, self.max_range) #Scale values
 
-        print("valid distances: ", len(valid_distances_index))
-
         valid_distances = raw_sensor_data[valid_distances_index]
         types_arr = np.zeros((len(valid_distances)))
         tanh_arr = 100*np.tanh(valid_distances/100)
