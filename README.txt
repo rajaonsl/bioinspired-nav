@@ -1,1 +1,0 @@
-A bio-inspired navigation model, ported to Python
