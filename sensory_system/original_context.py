@@ -1,22 +1,33 @@
 """
-the context used for grid cells in the original (java) implementation
+The context used for grid cells in the original (java) implementation.
+It is the default context for the bio-inspired model
+
+This specific implementation represents the context as a matrix.
+Each observed element, or 'cue', applies a gaussian value in a matrix. That matrix represents
+a discretization of polar space. the distance is warped using a tanh function
+to increase precision for low distances and lower precision for long distances
+(to compensate for higher sensor noise on long range readings).
 """
 
+from enum import IntEnum  #@TODO: investigate fastenum
 import numpy as np
 from numba import njit
-from enum import IntEnum  #@TODO: investigate fastenum
 
-from sensory_system.context_interface import ContextInterface
+from sensory_system.context import Context
 
 # =========================================================================================================
 class ContextCueType(IntEnum):
+    """
+    Possible types of cues
+    """
     OBSTACLE = 0
-    CORNER = 1
-    LANDMARK = 2
+    CORNER = 1 # CURRENTLY UNUSED
+    LANDMARK = 2 # CURRENTLY UNUSED
+
 
 # @TODO find better name
 # ========================================================================================================= 
-class OriginalContext(ContextInterface):
+class OriginalContext(Context):
     """
     This class represents environmental contexts as conceived in the original (java) implementation.
     """
@@ -41,24 +52,6 @@ class OriginalContext(ContextInterface):
         self.context_matrix = _compute_context_matrix(self.context_cues, spread_size=spread_size)
 
 
-    # MOVED TO RANGE SENSOR IMPLEMENTATION
-    # @classmethod
-    # def from_sensor_data(cls, sensor_data: np.ndarray, field_of_view = 360) -> 'OriginalContext':
-    #     """
-    #     returns an instance of OriginalContext, from raw sensor data
-    #     """
-    #     assert len(sensor_data) >= 2
-
-    #     context_cues = np.empty(len(sensor_data), dtype=object)
-    #     angle = 0
-    #     angle_step = field_of_view/(len(sensor_data) - 1)
-    #     for i, measurement in enumerate(sensor_data):
-    #         new_cue = ContextCue(d=measurement, theta=angle, cue_type=ContextCueType.OBSTACLE)
-    #         context_cues[i] = new_cue
-    #         angle += angle_step
-    #     new_context = cls(context_cues)
-    #     return new_context
-
     # ---------------------------------------------------------------------------------------------------------
     def occupancy(self, angle: int, distance: int, cue_type: int = ContextCueType.OBSTACLE):
         """returns a 'likelyness' that the point corresponds to a context cue"""
@@ -71,13 +64,15 @@ class OriginalContext(ContextInterface):
 
 
     # ---------------------------------------------------------------------------------------------------------
-    # NOTE:looks up the new_cues in the matrix (faster)
-    def update(self, new_cues: np.ndarray): # UNUSED BECAUSE 360 FOV @TODO: implement anyway
-        """
+    # NOTE: different from java impl. it looks up the new_cues in the matrix (faster)
+    # NOTE: Unused method, but implemented anyway. @TODO May need to be numba-ified before use.
+    def update(self, new_information: np.ndarray):
+        """        
+        new_information: expects an array of cues (each cue being an array of length 4)
         """
         new_cues_list = []
-        for cue in new_cues:
-            if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] != 1.:
+        for cue in new_information:
+            if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] != 1.: # NOTE/@TODO: use getters
                 new_cues_list.append(cue)
         
         self.context_cues = np.append(self.context_cues, np.array(new_cues_list))
@@ -103,24 +98,34 @@ def create_cue(distance, theta, cue_type: int=0):
     """
     return np.array([distance, theta, cue_type, 100*np.tanh(distance/100)])
 
+
+# ---------------------------------------------------------------------------------------------------------
 def cues_array_to_cartesian(array: np.ndarray):
     x = np.cos(np.radians(array[:, 1])) * array[:, 0]
     y = np.sin(np.radians(array[:, 1])) * array[:, 0]
 
     return x,y
 
-@njit # njit on these? really? lol
+
+# ---------------------------------------------------------------------------------------------------------
+@njit
 def get_d(cue: np.ndarray):
     return cue[0]
 
+
+# ---------------------------------------------------------------------------------------------------------
 @njit
 def get_theta(cue: np.ndarray):
     return cue[1]
 
+
+# ---------------------------------------------------------------------------------------------------------
 @njit
 def get_cue_type(cue: np.ndarray):
     return cue[2]
 
+
+# ---------------------------------------------------------------------------------------------------------
 @njit
 def get_d_2(cue: np.ndarray):
     return cue[3]
@@ -144,12 +149,11 @@ def _compute_context_matrix(context_cues: np.array, spread_size: int=4) -> np.nd
     """
 
     # The complex matrix is a discretization of polar space
-    context_matrix = np.zeros((360,100,2)) #@TODO make resolution flexible @TODO only 2 types?
-
-    
+    context_matrix = np.zeros((360,100,2)) #@TODO make resolution flexible @TODO only 2 types?    
 
     for cue in context_cues:
 
+        # @TODO: use getters
         d_int = int(cue[3]) # @TODO: use d' (tanh form)
         angle_int = int(cue[1]) # @TODO not interchange degrees and indexes
         cue_type = int(cue[2]) # @TODO: filter by type

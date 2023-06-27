@@ -5,7 +5,8 @@ from space_memory.place_cell import PlaceCell
 
 class SpaceMemoryVisualizer:
     """
-    Displays the graph of place cells
+    Displays the graph of place cells.
+    X and Y are inverted so that forward is up
     """
     def __init__(self, space_memory: SpaceMemory) -> None:
         self.width = 700
@@ -37,7 +38,7 @@ class SpaceMemoryVisualizer:
             color = self._get_color(place_activity)
 
             self._plot_cell(plot_x, plot_y, color, is_active=(place_cell == self.space_memory.current_place_cell))
-            # @TODO draw connections
+            self._draw_connections(place_cell)
 
 
     def _get_color(self, activity):
@@ -54,7 +55,29 @@ class SpaceMemoryVisualizer:
         center_x, center_y = self.width/2, self.height/2
         outline='red4' if not is_active else 'gold'
 
-        self.canvas.create_oval(x - radius + center_x,
+        self.canvas.create_oval(
                                 y - radius + center_y,
+                                x - radius + center_x,
+                                y + radius + center_y,
                                 x + radius + center_x,
-                                y + radius + center_y, fill=color, outline=outline, width=radius/3)
+                                fill=color, outline=outline, width=radius/3)
+    def _draw_connections(self, place_cell: PlaceCell):
+        """
+        draw edges between a place cell and all its neighbors
+        """
+        neighbors = place_cell.neighbors
+        for nb in neighbors:
+            self._draw_connection(place_cell.global_x, place_cell.global_y, nb.global_x, nb.global_y)
+
+    def _draw_connection(self, x_1, y_1, x_2, y_2):
+        """
+        draw a single edge
+        """
+        center_x, center_y = self.width/2, self.height/2
+        new_line = self.canvas.create_line(
+                                y_1*self.scaling + center_y,
+                                x_1*self.scaling + center_x,
+                                y_2*self.scaling + center_y,
+                                x_2*self.scaling + center_x,
+                                width=3)
+        self.canvas.tag_lower(new_line) # put edges *behind* nodes

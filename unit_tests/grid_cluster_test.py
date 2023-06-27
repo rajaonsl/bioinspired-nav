@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
-from sensory_system.context_cue import ContextCue, ContextCueType
-from sensory_system.original_context import OriginalContext
+from sensory_system.original_context import ContextCueType, OriginalContext, create_cue, get_d, get_d_2, get_theta
 from space_memory.grid_cell import GridCell
 
 from space_memory.grid_cluster import GridCluster
@@ -13,8 +12,8 @@ class TestGridCluster(unittest.TestCase):
     """
     def setUp(self):
         
-        self.cue1 = ContextCue(50, 10, ContextCueType.OBSTACLE)
-        self.cue2 = ContextCue(51, 18, ContextCueType.OBSTACLE)
+        self.cue1 = create_cue(theta=50, distance=10, cue_type=ContextCueType.OBSTACLE)
+        self.cue2 = create_cue(theta=51, distance=18, cue_type=ContextCueType.OBSTACLE)
 
         self.ctx_array = np.array([self.cue1, self.cue2])
         self.ctx = OriginalContext(self.ctx_array)
@@ -41,22 +40,20 @@ class TestGridCluster(unittest.TestCase):
 
     def test_compute(self):
         self.cluster.compute(self.observation_identical)
-        
 
-        # @TODO make better tests. with the "correct" (aka original)
-        # algorithm, the estimation is slightly off, which could be
-        # explained by the low count of cues.
-        #self.assertEqual(0, self.cluster.estimated_relative_x)
-        #self.assertEqual(0, self.cluster.estimated_relative_y)
-        #self.assertEqual(0, self.cluster.angle_estimation)
+        self.assertAlmostEqual(0, self.cluster.estimated_relative_x, places=2)
+        self.assertAlmostEqual(0, self.cluster.estimated_relative_y, places=2)
+        self.assertTrue(178 <= self.cluster.angle_estimation + 180 <= 182)
+        # NOTE: added 180° because angle -2° is represented as 358°, making comparison
+        # problematic.
 
     def _assert_ctx_equal(self, ctx1: OriginalContext, ctx2: OriginalContext):
         self.assertEqual(len(ctx1.context_cues), len(ctx2.context_cues))
         for i, context_cue in enumerate(ctx1.context_cues):
             context_cue_2 = ctx2.context_cues[i]
-            self.assertEqual(context_cue.d, context_cue_2.d)
-            self.assertEqual(context_cue.d_2, context_cue_2.d_2)
-            self.assertEqual(context_cue.theta, context_cue_2.theta)
+            self.assertEqual(get_d(context_cue), get_d(context_cue_2))
+            self.assertEqual(get_d_2(context_cue), get_d_2(context_cue_2))
+            self.assertEqual(get_theta(context_cue), get_theta(context_cue_2))
 
 
 

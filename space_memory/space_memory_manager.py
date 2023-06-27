@@ -3,7 +3,6 @@ import math
 import pstats
 import numpy as np
 
-# from sensory_system.context_cue import ContextCue
 from sensory_system.range_sensor import RangeSensor
 from space_memory.place_cell import PlaceCell
 from space_memory.grid_cluster import GridCluster 
@@ -20,14 +19,11 @@ class SpaceMemory:
     # @TODO: reconsider sensor_data as an argument for construction
     def __init__(self, sensor_data: np.ndarray, sensor_data_processor: RangeSensor,
                  scale: int=3):
-        # with cProfile.Profile() as profile:
 
-        # Initialize various parameters
-        #   - defines required activity for a place cell to become active
-        self.place_cell_activity_floor = 250
-        #   - defines the "tolerance" of context comparison for place/grid cells
-        self.grid_cell_spread_size = 4
-        self.place_cell_spread_size = 16
+        # 1 - Initialize various parameters
+        self.place_cell_activity_floor = 250 # required activity for a place cell to become active
+        self.grid_cell_spread_size = 4 # "tolerance" of context comparison for grid cells # @TODO move to OriginalContext
+        self.place_cell_spread_size = 16 # same but for place cells # @TODO move to OriginalContext
 
         # Save sensor info
         #@TODO use this more (especially FOV!)
@@ -43,13 +39,6 @@ class SpaceMemory:
         # Initialize the module (only one, reused when active cell changes)
         self.grid: GridCluster = GridCluster(scale=scale)
         self.grid.set_place_cell(self.current_place_cell)
-
-
-        # results = pstats.Stats(profile)
-        # results.sort_stats(pstats.SortKey.TIME)
-        # results.print_stats()
-        # results.dump_stats("/home/ubuntu/share/init_profile.prof")
-        # results.dump_stats("init_profile.prof")
 
     #-------------------------------------------------------------------
     def update(self, raw_sensor_data: np.ndarray):
@@ -93,7 +82,7 @@ class SpaceMemory:
     #-------------------------------------------------------------------
     # @TODO: Currently bugged, and unused. Fix because can be useful in reduced FOV scenario
     # @TODO: reconsider type of sensor_data 
-    # @TODO-2: most of this code should really be in PlaceCell and Context instead of here
+    # @TODO-2: most of this code should really be in OriginalContext instead of here
     # @TODO-3: numpy-ify
     def __update_context(self, sensor_data: np.ndarray, relative_x: float, relative_y: float, theta: float):
         """
@@ -167,7 +156,7 @@ class SpaceMemory:
             else:
                 current_x = self.current_place_cell.global_x + estimated_x 
                 current_y = self.current_place_cell.global_y + estimated_y
-                current_context = OriginalContext(sensor_data, self.place_cell_spread_size).rotate(-1*estimated_theta) # Reset angle @TODO slight inefficiency (should rotate sensor_data instead)
+                current_context = OriginalContext(sensor_data, self.place_cell_spread_size).rotate(estimated_theta) # Reset angle @TODO slight inefficiency (should rotate sensor_data instead)
                 new_cell = PlaceCell(current_context, global_x=current_x, global_y=current_y) # @TODO/WARNING DOESNT WORK !!!!!!! IMPLEMENT CREATION OF CONTEXT FROM RAW SENSOR DATA !!!!
 
                 self.current_place_cell.addNeighbor(new_cell)
