@@ -16,6 +16,7 @@ class GridClusterVisualizer:
         self.width = 11*self.cell_size
         self.height = 11*self.cell_size
         self.window = tk.Tk()
+        self.window.title("Grid cluster activation")
         self.canvas = tk.Canvas(self.window, width=self.width, height=self.height, bg="white")
         self.canvas.grid(row=1, column=1)
         
