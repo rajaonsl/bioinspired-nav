@@ -72,12 +72,14 @@ class OriginalContext(Context):
         """
         new_cues_list = []
         for cue in new_information:
-            if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] != 1.: # NOTE/@TODO: use getters
+            if self.context_matrix[round(cue[1]), round(cue[3]), round(cue[2])] < .8: # NOTE/@TODO: use getters
                 new_cues_list.append(cue)
         
-        self.context_cues = np.vstack((self.context_cues, np.array(new_cues_list)))
 
-        self.context_matrix = _compute_context_matrix(self.context_cues, self.spread_size)
+        if len(new_cues_list) > 0:
+            self.context_cues = np.vstack((self.context_cues, np.array(new_cues_list)))
+
+            self.context_matrix = _compute_context_matrix(self.context_cues, self.spread_size)
 
     # ---------------------------------------------------------------------------------------------------------
     def rotate(self, angle_in_degrees, spread_size=16): # Used by place cells, hence the default spread size to 16
