@@ -41,9 +41,8 @@ class PlaceCell:
             return
         
         self.neighbors.append(other)
+        other.addNeighbor(self) # Reciprocity
         self.__neighbors_ids.append(other.id)
-
-        # @TODO: should 'self' be added as a neighbor of 'other' ? (i.e. reciprocity)
 
 
     #-------------------------------------------------------------------
@@ -60,7 +59,7 @@ class PlaceCell:
         pass
 
 @njit
-def numba_fast_compute(observation: np.ndarray, context_matrix: np.ndarray):
+def numba_fast_compute(observation: np.ndarray, context_matrix: np.ndarray, minimum_matching_cues: int=3):
     """
     Compute activity for an observed context
     
@@ -86,19 +85,17 @@ def numba_fast_compute(observation: np.ndarray, context_matrix: np.ndarray):
         for ctx_cue in observation:
             
             # angle of the cue if the agent is rotated by r
-            theta = int(get_theta(ctx_cue) - r + 720)%360 #@TODO clean up, and move int cast to occupancy fct
+            theta = int(get_theta(ctx_cue) - r)%360
             
-            # NEW CODE (no concern with FOV)
             sum_ += context_matrix[theta, int(get_d_2(ctx_cue)), int(get_cue_type(ctx_cue))]
             matches_count+=1
 
-        if (matches_count > 3 and sum_ > max_activity_2): #@TODO make flexible
+        if (matches_count > minimum_matching_cues and sum_ > max_activity_2):
             max_activity_2 = sum_
             angle_of_max_activity_2 = r
 
     # Compute the matching of the PC's context with the envt (for the angle found)
     sum_ = 0
-    # ctx_cue: ContextCue
     for ctx_cue in observation:
         theta = int(get_theta(ctx_cue) + angle_of_max_activity_2 + 360) % 360 #@TODO clean up
         sum_ +=  context_matrix[theta, int(get_d_2(ctx_cue)), int(get_cue_type(ctx_cue))] #@TODO: move int cast to occupancy

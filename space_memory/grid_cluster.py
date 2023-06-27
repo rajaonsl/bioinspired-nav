@@ -91,7 +91,6 @@ class GridCluster:
                     orientation[d]+=(cell.max_activity**2)*self.gauss[(k//2) + 4]
 
         # 2. Get best matching orientation
-        # @TODO: there's probably a std function for this
         max_angle: int = np.argmax(orientation)
 
         # 3. Compute exact estimated orientation (not bound by grid)
@@ -136,14 +135,12 @@ class GridCluster:
                 estimated_y += (cell_y + j) * activity[dx][dy]
                 sum_ += activity[dx][dy]
 
-        print("estimated_x", estimated_x)
-        print("estimated_y", estimated_y)
         if sum_ > 0:
             self.estimated_relative_x = estimated_x/sum_ - self.center_x
             self.estimated_relative_y = estimated_y/sum_ - self.center_y
         else:
             print("warning: grid failed to estimate position:")
-            print(activity)
+            print("activity:", activity)
 
 
     #-------------------------------------------------------------------

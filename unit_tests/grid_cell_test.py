@@ -21,28 +21,10 @@ class TestOriginalContext(unittest.TestCase):
 
 
     def test_compute(self):
-        self.cell.faster_compute(self.test_observation_identical)
+        self.cell.compute(self.test_observation_identical)
         self.assertEqual(0, self.cell.max_activity_angle)
-        self.cell.faster_compute(self.test_observation_rot20)
+        self.cell.compute(self.test_observation_rot20)
         self.assertEqual(360 - 20, self.cell.max_activity_angle)
-
-    # def test_fast_compute(self):
-    #     self.cell.fast_compute(self.test_observation_identical)
-    #     self.assertEqual(0, self.cell.max_activity_angle)
-    #     self.cell.compute(self.test_observation_rot20)
-    #     self.assertEqual(360 - 20, self.cell.max_activity_angle)
-
-    # def test_fast_compute_2(self):
-    #     self.cell.fast_compute_2(self.test_observation_identical)
-    #     self.assertEqual(0, self.cell.max_activity_angle)
-    #     self.cell.compute(self.test_observation_rot20)
-        # self.assertEqual(360 - 20, self.cell.max_activity_angle)
-
-    # def test_fast_compute_3(self):
-    #     self.cell.fast_compute_3(self.test_observation_identical)
-    #     self.assertEqual(0, self.cell.max_activity_angle)
-    #     self.cell.compute(self.test_observation_rot20)
-    #     self.assertEqual(360 - 20, self.cell.max_activity_angle)
 
 if __name__ == '__main__':
     unittest.main()

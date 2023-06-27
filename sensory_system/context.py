@@ -13,32 +13,41 @@ A context can be modified or updated.
 
 Two contexts can be compared to each other to determine
 their similarity.
+
+NOTE:
+This is only a generic interface. The default implementation for
+contexts is OriginalContext. New contexts can be defined and used,
+as long as the given functions are defined.
 """
 
-import numpy as np
+class Context:
+    """ This is a generic interface that can be used to define contexts """
 
-from sensory_system.context_interface import ContextInterface
+    def __init__(self, sensor_data):
+        pass
 
-class Context(ContextInterface): # @TODO: reconsider usefulness lol
-    """ This is an implementation of ContextInterface for range measurements
-    NOTE: not the original implementation
-    NOTE: unfinished
-    """
+    # def offset_context(self, displacement) -> 'ContextInterface':
+    #     """Compute the offset of the context by a displacement"""
 
-    def __init__(self, context_cues: np.ndarray):
+    def update(self, new_information):
         """
-        context cues are expected as a numpy array of context cues (type ContextCue)
+        Update the context with a new reading. Currently unused,
+        as FOV is 360 so not much new information should be received
         """
-        self.context_cues = context_cues
 
-    def compare(self, other: 'Context') -> float:
-        sum_ = 0
-        for cue in self.context_cues:
+    def offset(self, x_offset: float, y_offset: float) -> 'Context':
+        """
+        Offsets the context by a given displacement. Used in grid cell module
+        to predict observable contexts after a displacement.
+        """
 
-            # performance hack to avoid method lookup in loop, see:
-            # https://stackoverflow.com/questions/41781048/overhead-of-creating-classes-in-python-exact-same-code-using-class-twice-as-slo
-            compare = cue.compare
+    def rotate(self, angle_in_degrees) -> 'Context':
+        """
+        Rotates the context by a given angle.
+        """
 
-            for other_cue in other.context_cues:
-                sum_ += compare(other_cue)
-        # @TODO: do something with the sum and return a result
+    def compare(self, observation):
+        """
+        Compares context to an observation. Used in
+        place and grid cells to compute activity.
+        """
