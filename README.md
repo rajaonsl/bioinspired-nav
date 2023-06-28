@@ -2,6 +2,7 @@
 
 This repository contains a bio-inspired navigation model for a system navigating in an unknown environment using a range detector. A ROS2 node implementation is provided as an example for the TurtleBot3 burger, which embarks a 360° LiDAR sensor.
 
+*Author: L. Rajaonson    |    Supervisors: S. Gay, I. Prodan    |    Internship at LCIS (Valence, FR). 2023*
 # How do I run it
 
 ## Prerequisites
