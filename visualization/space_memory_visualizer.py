@@ -65,6 +65,7 @@ class SpaceMemoryVisualizer:
     def _plot_cell(self, x, y, color, is_active: bool=False, radius=7):
         center_x, center_y = self.width/2, self.height/2
         outline='red4' if not is_active else 'gold'
+        radius +=2 if is_active else 0
 
         self.canvas.create_oval(
                                 y - radius + center_y,

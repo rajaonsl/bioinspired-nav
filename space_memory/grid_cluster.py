@@ -44,7 +44,7 @@ class GridCluster:
         to compute the offset contexts of the grid cells
         """
 
-        # OLD weird code
+        # OLD java code (toroidal)
         # # # For each grid cell of the module, apply context offset.
         # for i, row in enumerate(self.grid):
         #     _ : GridCell
