@@ -1,4 +1,5 @@
-README.txt
+LICENSE
+README.md
 setup.py
 bioinspired_nav.egg-info/PKG-INFO
 bioinspired_nav.egg-info/SOURCES.txt
