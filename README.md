@@ -11,11 +11,23 @@ To run the example ROS2 node, you need at least a computer running **a compatibl
 
 Some Python packages may also be required: **`numpy`, `numba`, `PIL/pillow`**, as well as some standard packages (math, enum, tkinter, unittest)
 
-## Build it
+## Build ROS2 node
 
-Clone the repository into the sources of your ROS workspace ([...]/your_ws/src/bioinspired-nav). Then, simply build the package using colcon:
+Clone the repository, then navigate to the ros2 workspace:
 
-    colcon build --select-packages bioinspired-nav --symlink-install
+    $ cd ros2_workspace
+
+Then, simply build the package using colcon:
+
+    ros2_workspace$ colcon build --symlink-install
+
+Finally, don't forget to source the workspace so that ROS can find the package:
+
+    source install/setup.bash
+
+*Note: usually, to avoid having to source your workspaces each time you open a terminal, you can add this command to your `.bashrc`, so that it is ran automatically:*
+
+    echo 'source PATH-TO-THE-REPO-HERE/ros2_workspace/install/setup.bash' >> ~/.bashrc
 
 ## Run it (EXAMPLE)
 
@@ -33,7 +45,7 @@ In another terminal, run a means to **control your robot** (here, we will use th
 
 Finally, in a third terminal, **run the bio-inspired node**:
 
-    <insert command here>
+    ros2 run turtlebot3_bioinspired_nav space_memory_node
 
 ## What is happening?
 
@@ -69,6 +81,8 @@ The project is subdivided into several folders:
     - `MatrixVisualizer` visualizes a 2D matrix as a grayscale image. Its main purpose is to visualize the context matrices constructed in the *OriginalContext* implementation.
 
     - `SpaceMemoryVisualizer` visualizes the graph of place cells and their activity. As an option, it can also open a matrix visualizer for the active place cell's context (assuming the default implementation, *OriginalContext*).
+
+- **ros2_workspace** is a ROS workspace. It contains a ROS2 node that runs the model, using sensor data read on the ros topic `/scan` (default topic for the turtlebot3).
 
 # References
 
