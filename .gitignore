@@ -1,5 +1,11 @@
 
 sensory_system/__pycache__/
 space_memory/__pycache__/
+
+ros2_workspace/build/**
+ros2_workspace/install/**
+ros2_workspace/log/**
+
+
 *.py[cod]
 *.pyc
