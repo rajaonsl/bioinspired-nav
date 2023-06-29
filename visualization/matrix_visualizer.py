@@ -34,6 +34,10 @@ class MatrixVisualizer:
         # Scale the matrix to integers 0 - 255
         scaled = (self.matrix * 255).astype(np.uint8)
 
+        # IMPORTANT NOTE: using Image.fromarray is at least 60x faster than
+        # addressing each pixel individually. When modifying this file, the
+        # programmer should try to use vectorized operations and create the
+        # image directly from an array, as much as possible.
         self.image = Image.fromarray(scaled, "L")
         self.tk_image.paste(self.image)
         self.canvas.itemconfig(self.image_item, image=self.tk_image)
