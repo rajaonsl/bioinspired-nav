@@ -6,6 +6,8 @@ ros2_workspace/build/**
 ros2_workspace/install/**
 ros2_workspace/log/**
 
+renamescript.sh
+
 
 *.py[cod]
 *.pyc
