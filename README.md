@@ -7,7 +7,7 @@ This repository contains a bio-inspired navigation model for a system navigating
 
 ## Prerequisites
 
-To run the example ROS2 node, you need at least a computer running **a compatible version of ROS2 (preferably `humble` or `foxy`)**. You can either simulate a TurtleBot (for example with Gazebo) or use a physical robot. 
+To run the example ROS2 node, you need at least a computer running **a compatible version of ROS2 (preferably `humble` or `foxy`)**. You need to either simulate a TurtleBot (for example with Gazebo) or use a physical robot. 
 
 Some Python packages may also need to be installed: **`numpy`, `numba`, `PIL/pillow`**. Some standard packages are also used (math, enum, tkinter, unittest).
 
